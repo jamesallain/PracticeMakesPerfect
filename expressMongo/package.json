@@ -9,6 +9,8 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "babel-preset-es2015": "^6.24.0",
+    "babel-preset-react": "^6.23.0",
     "config-lite": "^1.5.0",
     "connect-flash": "^0.1.1",
     "connect-mongo": "^1.3.2",
