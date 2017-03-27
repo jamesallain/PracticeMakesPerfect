@@ -11,7 +11,7 @@ router.get('/', function(req, res, next) {
 
 // POST /posts 发表一篇文章
 router.post('/', checkLogin, function(req, res, next) {
-    res.send(req.flash());
+    res.render('posts');
 });
 
 // GET /posts/create 发表文章页
