@@ -1,8 +1,4 @@
-var User = require('../lib/mongoose').User;
+var userSchema = require('../lib/mongoose').userSchema;
+var mongoose = require('mongoose');
 
-module.exports = {
-  // 注册一个用户
-  create: function create(user) {
-    return User.create(user).exec();
-  }
-};
+exports.userModel =  mongoose.model('user',userSchema);
