@@ -23,7 +23,7 @@ exports.signin = function(req, res, name, password) {
         delete user.password;
         req.session.user = user;
         // 跳转到主页
-        res.redirect('/article');
+        res.redirect('/articles');
     })
 }
 
@@ -47,7 +47,7 @@ exports.signup = function(req, res, user, fs, next) {
             // 写入 flash
             req.flash('success', '注册成功');
             // 跳转到首页
-            res.redirect('/article');
+            res.redirect('/articles');
         }
     });
 }
