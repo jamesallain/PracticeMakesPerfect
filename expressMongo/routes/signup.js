@@ -77,7 +77,7 @@ router.post('/', checkNotLogin, function(req, res, next) {
             // 写入 flash
             req.flash('success', '注册成功');
             // 跳转到首页
-            res.redirect('/posts');
+            res.redirect('/article');
         }
     });
 });
