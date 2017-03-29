@@ -1,7 +1,6 @@
 var express = require('express');
 var router = express.Router();
-var articleModel = require('../models/article').articleModel;
-
+var articleCtrl = require('../controllers/articleCtrl');
 var checkLogin = require('../middlewares/check').checkLogin;
 
 // GET /articles 所有用户或者特定用户的文章页
@@ -35,13 +34,8 @@ router.post('/', checkLogin, function(req, res, next) {
         content: content,
         pv: 0
     };
+    articleCtrl.save(req, res, article);
 
-    var article = new articleModel(article);
-    article.save(function(err, article) {
-        req.flash('success', '发表成功');
-        // 发表成功后跳转到该文章页
-        res.redirect(`/article/${article._id}`);
-    });
 });
 
 // GET /articles/create 发表文章页

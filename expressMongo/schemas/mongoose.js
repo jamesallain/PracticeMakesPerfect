@@ -1,10 +1,3 @@
-var config = require('config-lite');
-var mongoose = require('mongoose');
-var moment = require('moment');
-var objectIdToTimestamp = require('objectid-to-timestamp');
-
-mongoose.connect(config.mongodb);
-
 exports.userSchema = new mongoose.Schema({
     name: String,
     password: String,

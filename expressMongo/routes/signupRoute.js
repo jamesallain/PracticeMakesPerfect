@@ -1,9 +1,8 @@
-var fs = require('fs');
 var path = require('path');
 var sha1 = require('sha1');
 var express = require('express');
 var router = express.Router();
-var userModel = require('../models/users').userModel;
+var usersCtrl = require('../controllers/usersCtrl');
 var checkNotLogin = require('../middlewares/check').checkNotLogin;
 
 // GET /signup 注册页
@@ -58,28 +57,7 @@ router.post('/', checkNotLogin, function(req, res, next) {
         bio: bio,
         avatar: avatar
     };
-    // 用户信息写入数据库
-    var createUser = new userModel(user);
-
-    createUser.save(function(err, result) {
-        if (err) {
-            // 注册失败，异步删除上传的头像
-            fs.unlink(req.files.avatar.path);
-            // 用户名被占用则跳回注册页，而不是错误页
-            // if (e.message.match('E11000 duplicate key')) {
-            req.flash('error', '用户名已被占用');
-            return res.redirect('/signup');
-            // }
-            next();
-        } else {
-            console.log(result)
-            req.session.user = result;
-            // 写入 flash
-            req.flash('success', '注册成功');
-            // 跳转到首页
-            res.redirect('/article');
-        }
-    });
+    usersCtrl.signup(req, res, user, fs, next);
 });
 
 module.exports = router;
