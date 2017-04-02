@@ -1,4 +1,3 @@
-/*! This file is created by zhaoda */
 /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
@@ -71,7 +70,7 @@
 /* 0 */
 /***/ (function(module, exports) {
 
-console.log(1);
+throw new Error("Module parse failed: G:\\PracticeMakesPerfect\\webpackPractice\\app\\index.js Unexpected character '：' (7:2)\nYou may need an appropriate loader to handle this file type.\n| document.body.appendChild(app);\r\n| \r\n| 作者：张轩\r\n| 链接：https://zhuanlan.zhihu.com/p/20367175\r\n| 来源：知乎\r");
 
 /***/ })
 /******/ ]);
