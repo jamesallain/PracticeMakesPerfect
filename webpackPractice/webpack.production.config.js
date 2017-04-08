@@ -6,14 +6,14 @@ var ROOT_PATH = path.resolve(__dirname);
 var APP_PATH = path.resolve(ROOT_PATH, "app");
 var BUILD_PATH = path.resolve(ROOT_PATH, "build");
 var jquery = path.resolve(APP_PATH, 'jquery.js');
-var jquery = path.resolve(APP_PATH, 'comment.js');
+var moment = path.resolve(APP_PATH, 'comment.js');
 
 
 module.exports = {
     entry: {
         app: path.resolve(APP_PATH, 'index.js'),
         //添加要打包在vendors里面的库
-        vendors: ['jquery', 'moment']
+        vendors: [jquery, moment]
     },
     output: {
         path: BUILD_PATH,
