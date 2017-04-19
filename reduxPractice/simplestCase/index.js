@@ -6,6 +6,7 @@ import { Provider, connect } from 'react-redux'
 // React component
 class Counter extends Component {
   render() {
+    console.log(this.props)
     const { value, onIncreaseClick } = this.props
     return (
       <div>
@@ -22,14 +23,14 @@ Counter.propTypes = {
 }
 
 // Action
-const increaseAction = { type: 'increase' }
+const increaseAction = { type: 'increase', text: "2" }
 
 // Reducer
 function counter(state = { count: 0 }, action) {
   const count = state.count
   switch (action.type) {
     case 'increase':
-      return { count: count + 1 }
+      return { count: count + action.text }
     default:
       return state
   }
