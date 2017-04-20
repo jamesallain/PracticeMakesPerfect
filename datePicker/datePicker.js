@@ -12,14 +12,14 @@ define('datePicker', ['jquery', 'exports'], function($, exports) {
                 dates.day = date.getDate();
                 return dates
             },
-            getWeekDay:function(year,month,day){
-            	var date = new Date(year,month,day);
-            	return date.getDay();
+            getWeekDay: function(year, month, day) {
+                var date = new Date(year, month, day);
+                return date.getDay();
             },
-            caculate_month_table_rows:function(year,month,first_weekDay){
-            	var m_days = utils.m_days(year);
-            	var m_day = m_days[month];
-            	return Math.ceil((m_day + first_weekDay)/7);
+            caculate_month_table_rows: function(year, month, first_weekDay) {
+                var m_days = utils.m_days(year);
+                var m_day = m_days[month];
+                return Math.ceil((m_day + first_weekDay) / 7);
             },
             isLeap: function(year) {
                 return (year % 100 == 0 ? res = (year % 400 == 0 ? 1 : 0) : res = (year % 4 == 0 ? 1 : 0));
@@ -33,9 +33,60 @@ define('datePicker', ['jquery', 'exports'], function($, exports) {
                 "July", "August", "September", "October", "November", "December"
             ], // Names of months for drop-down and formatting
             monthNamesShort: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"], // For formatting
+            setDayNames: function(beginOn) {
+                //begin on monday
+                if (beginOn === "Monday") {
+                    utils.dayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday", ];
+                    utils.dayNamesShort = ["MON", "TUE", "WEN", "THR", "FRI", "SAT", "SUN", ];
+                }
+            },
+            changePickedDate: function(target, newDate) {
+                utils.refreshCalendarAfterChangePickedDate(target, newDate);
+                utils.refreshSelectAfterChangePickedDate(target, newDate);
+                pickdDate.year = newDate.year;
+                pickdDate.month = newDate.month;
+                pickdDate.day = newDate.day;
+            },
+            refreshCalendarAfterChangePickedDate: function(target, newDate) {
+                target.children(".calendar-container").remove();
+                this.reRenderCalendar(newDate, target);
+            },
+            reRenderCalendar: function(newDate, target) {
+                new calendar(newDate, target);
+            },
+            refreshSelectAfterChangePickedDate: function(target, newDate) {
+                var daySelect = $(target.find("select")[0]);
+                var monthSelect = $(target.find("select")[1]);
+                var yearSelect = $(target.find("select")[2]);
+                this.checkIsLeapYearFebruary(yearSelect.val(), newDate.year, monthSelect.val(), function() {
+                    day_month_year_select.prototype.re_generate_day_options(newDate.year, newDate.month, newDate.day, daySelect);
+                });
+                this.refreshSelectSingle(daySelect, newDate.day - 1, newDate.day);
+                this.refreshSelectSingle(monthSelect, newDate.month, utils.monthNames[newDate.month]);
+                var yearIndex = +newDate.year - settings.minYear;
+                this.refreshSelectSingle(yearSelect, yearIndex, newDate.year);
+            },
+            refreshSelectSingle: function(selectEl, newIndex, newVal) {
+                selectEl.children().removeAttr("selected");
+                $(selectEl.children()[newIndex]).attr("selected", "selected");
+                selectEl.val(newVal);
+            },
+            checkIsLeapYearFebruary: function(originYear, newYear, month, callback) {
+                //if changed leap year to another year or nonleap year to leap year and month is Febuary
+                //we will change m_day and reGenerate day options
+                if (utils.isLeap(originYear) !== utils.isLeap(newYear)) {
+                    originYear = newYear;
+                    if (month == "February") {
+                        callback();
+                    }
+                }
+            },
+            //default bengin on sunday
             dayNames: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"], // For formatting
-            dayNamesShort: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-        }
+            dayNamesShort: ["SUN", "MON", "TUE", "WEN", "THR", "FRI", "SAT"]
+        };
+        //if user set week start day is monday ,then we reset the bengin on day
+        utils.setDayNames(settings.beginOn);
         var dayEl = $(settings.daySelectEl),
             monthEl = $(settings.monthSelectEl),
             yearEl = $(settings.yearSelectEl),
@@ -103,22 +154,20 @@ define('datePicker', ['jquery', 'exports'], function($, exports) {
             _change_year: function() {
                 var _this = this;
                 yearEl.on('change', function() {
+                    var self = this;
                     //if changed leap year to another year or nonleap year to leap year and month is Febuary
                     //we will change m_day and reGenerate day options
-                    if (utils.isLeap(pickdDate.year) !== utils.isLeap($(this).val())) {
-                        pickdDate.year = $(this).val();
-                        if (monthEl.val() == "February") {
-                        	_this.re_generate_day_options();
-                        }
-                    }
+                    utils.checkIsLeapYearFebruary(pickdDate.year, $(this).val(), monthEl.val(), function() {
+                        _this.re_generate_day_options($(self).val(), pickdDate.month, pickdDate.day, dayEl)
+                    });
                     pickdDate.year = $(this).val();
                 });
             },
             _change_month: function() {
-            	var _this =this;
+                var _this = this;
                 monthEl.on('change', function() {
                     pickdDate.month = this.selectedIndex;
-                    _this.re_generate_day_options();
+                    _this.re_generate_day_options(pickdDate.year, pickdDate.month, pickdDate.day, dayEl);
                 });
             },
             _change_day: function() {
@@ -126,106 +175,199 @@ define('datePicker', ['jquery', 'exports'], function($, exports) {
                     pickdDate.day = +$(this).val();
                 });
             },
-            re_generate_day_options: function() {
+            re_generate_day_options: function(year, month, day, dayEl) {
                 dayEl.children().remove();
-                var m_day = this.caculate_m_day(pickdDate.year, pickdDate.month);
+                var m_day = this.caculate_m_day(year, month);
                 this._generate_day_options(m_day);
-                $(dayEl.children()[+pickdDate.day - 1]).attr("selected", "selected");
+                $(dayEl.children()[+day - 1]).attr("selected", "selected");
             }
 
         });
         new day_month_year_select();
-        function calendar(){
-        	this._init();
-        }
-        $.extend(calendar.prototype,{
-        	_init:function(){
-        		var _this = this;
-        		iconEl.click(function(e){
-        			_this._render_calendar();
-        		});
-        	},
-        	_render_calendar:function(){
-        		var calendar_container = this._render_calendar_container();
-        		var calendar_header = this._render_calendar_header();
-        		var calendar_weeks = this._render_calendar_weeks();
-        		var calendar_days  =this._render_calendar_days();
-        		containerEl.append(calendar_container);
-        		calendar_container.append(calendar_header).append(calendar_weeks).append(calendar_days);
-        	},
-        	_render_calendar_container:function(){
-        		var calendar_container = $("<div class='calendar-container'></div>");
-        		return calendar_container;
-        	},
-        	_render_calendar_header:function(){
-        		var calendar_header = $("<div class='calendar-header'></div>");
-        		var calendar_prev = $("<div class='calendar-prev'><span class='fa fa-arrow-left'></span></div>");
-        		var calendar_next = $("<div class='calendar-next'><span class='fa fa-arrow-right'></span></div>");
-        		var month_and_year_text_container = $("<h3 class='month-year-text-container'></h3>");
-        		var month_text = $("<span class='month-text'>"+utils.monthNames[pickdDate.month]+"</span>");
-        		var year_text = $("<span class='year-text'>"+pickdDate.year+"</span>");
-        		month_and_year_text_container.append(month_text).append(year_text);
-        		calendar_header.append(calendar_prev).append(month_and_year_text_container).append(calendar_next);
-        		return calendar_header
-        	},
-        	_render_calendar_weeks:function(){
-        		var calendar_weeks = $("<ul class='calendar-weeks'></ul>");
-        		for(var i=0; i<utils.dayNamesShort.length;i++){
-        			var week = $("<li class='calendar-week'>"+utils.dayNamesShort[i]+"</li>");
-        			calendar_weeks.append(week);
-        		}
-        		return calendar_weeks;
-        	},
-        	_render_calendar_days:function(){
-        		var calendar_days = $("<div class='calendar-days'></div>");
-        		var calendar_table = $("<table></table>");
-        		var calendar_tbody = this._generate_month_days(pickdDate.year,pickdDate.month,1);
-        		calendar_table.append(calendar_tbody);
-        		calendar_days.append(calendar_table);
-        		return calendar_days
-        	},
-        	_generate_month_days:function(year,month,day){
-        		var calendar_tbody = $("<tbody></tbody>");
-        		var first_weekDay = utils.getWeekDay(year,month,day);
-        		var rows = utils.caculate_month_table_rows(year,month,first_weekDay);
-        		var m_day = utils.m_days(year)[month];
-        		var first_line= this._generate_month_days_first_line(first_weekDay);
-        		calendar_tbody.append(first_line);
-        		this._generate_month_days_remain_lines(calendar_tbody,first_weekDay,rows,m_day);
-        		return calendar_tbody
-        	},
-        	_generate_month_days_first_line:function(first_weekDay){
-        		var tr = $("<tr></tr>");
-        		var index =1;
-        		for(var i =0; i<7; i++){
-        			var td = $("<td style='width:36.8px;text-align:center;'></td>");
-        			if(i>=first_weekDay){
-        				td.append(index);
-        				index++
-        			}
-        			tr.append(td);
-        		}
-        		return tr
-        	},
-        	_generate_month_days_remain_lines:function(calendar_tbody,first_weekDay,rows,m_day){
-        		var _this = this;
-        		var index = 7-first_weekDay;
-        		for(var i =0; i<rows-1;i++){
-        			var tr = $("<tr></tr>");
-        			for(var j =0; j<7; j++){
-        				if(index>m_day-1){
-        					index =0;
-        				}
-        				index++
-        				var td = $("<td style='width:36.8px;text-align:center;'>"+index+"</td>");
-        				tr.append(td);
-        			}
-        			calendar_tbody.append(tr);
-        		}
-        	}
 
+        function calendar(date, container) {
+            this._init(date, container);
+        }
+        $.extend(calendar.prototype, {
+            _init: function(date, container) {
+                this._render_calendar(date, container);
+            },
+            _destory_calendar: function(calendar) {
+                calendar.fadeOut().remove();
+            },
+            _render_calendar: function(date, container) {
+                var calendar_container = this._render_calendar_container();
+                var calendar_header = this._render_calendar_header(date);
+                var calendar_weeks = this._render_calendar_weeks();
+                var calendar_days = this._render_calendar_days(date);
+                var triangle_btn = $("<div class='calendar-triangle'></div>");
+                container.append(calendar_container);
+                calendar_container.append(calendar_header).append(calendar_weeks).append(calendar_days).append(triangle_btn);
+            },
+            _render_calendar_container: function() {
+                var calendar_container = $("<div class='calendar-container'></div>");
+                return calendar_container;
+            },
+            _render_calendar_header: function(date) {
+                var calendar_header = $("<div class='calendar-header'></div>");
+                var calendar_prev = $("<div class='calendar-prev'><span class='fa fa-angle-left'></span></div>");
+                var calendar_next = $("<div class='calendar-next'><span class='fa fa-angle-right'></span></div>");
+                var month_and_year_text_container = $("<h3 class='month-year-text-container'></h3>");
+                var month_text = $("<span class='month-text'>" + utils.monthNames[date.month] + "</span>");
+                var year_text = $("<span class='year-text'>" + date.year + "</span>");
+                var calendar_header_btn_container = this._render_calendar_header_btn_container();
+                month_and_year_text_container.append(month_text).append(year_text);
+                calendar_header.append(calendar_header_btn_container).append(calendar_prev).append(month_and_year_text_container).append(calendar_next);
+                return calendar_header
+            },
+            _render_calendar_header_btn_container: function() {
+                var calendar_header_btn_container = $("<div class='calendar-header-btn-container'></div>");
+                var today_btn = this._generate_today_reset_btn();
+                var close_btn = this._generate_close_calendar_btn();
+                calendar_header_btn_container.append(today_btn).append(close_btn);
+                return calendar_header_btn_container;
+            },
+            _render_calendar_weeks: function() {
+                var calendar_weeks = $("<ul class='calendar-weeks'></ul>");
+                for (var i = 0; i < utils.dayNamesShort.length; i++) {
+                    var week = $("<li class='calendar-week'>" + utils.dayNamesShort[i] + "</li>");
+                    calendar_weeks.append(week);
+                }
+                return calendar_weeks;
+            },
+            _render_calendar_days: function(date) {
+                var calendar_days = $("<div class='calendar-days'></div>");
+                var calendar_table = $("<table></table>");
+                var calendar_tbody = this._generate_month_days(date.year, date.month, 1, date);
+                calendar_table.append(calendar_tbody);
+                calendar_days.append(calendar_table);
+                return calendar_days
+            },
+            _generate_month_days: function(year, month, day, date) {
+                var calendar_tbody = $("<tbody></tbody>");
+                var first_weekDay = utils.getWeekDay(year, month, day);
+                //if user set week start day is monday ,then we reset the bengin on day
+                if (settings.beginOn === "Monday") {
+                    first_weekDay--
+                }
+                var rows = utils.caculate_month_table_rows(year, month, first_weekDay);
+                var m_day = utils.m_days(year)[month];
+                var prev_m_day = utils.m_days(year)[month - 1];
+                var first_line = this._generate_month_days_first_line(first_weekDay, prev_m_day, date);
+                calendar_tbody.append(first_line);
+                this._generate_month_days_remain_lines(calendar_tbody, first_weekDay, rows, m_day, date);
+                return calendar_tbody
+            },
+            _generate_month_days_first_line: function(first_weekDay, prev_m_day, date) {
+                var tr = $("<tr></tr>");
+                var _this = this;
+                var index = 1;
+                for (var i = 0; i < 7; i++) {
+                    var td = $("<td style='width:36.8px;text-align:center;'></td>");
+                    if (i >= first_weekDay) {
+                        td.append(_this._generate_td_inner_a(index));
+                        _this._set_picked_date_highlight(td, index, date);
+                        index++
+                    } else {
+                        var a = _this._generate_td_inner_a(_this._generate_prev_month_days_first_line(first_weekDay, prev_m_day, i));
+                        td.append(a);
+                        td.addClass("last-month");
+                    }
+                    tr.append(td);
+                }
+                return tr
+            },
+            _generate_td_inner_a: function(i) {
+                var a = $("<a class='calendar-days-a'></a>");
+                a.append(i);
+                return a
+            },
+            _generate_prev_month_days_first_line: function(first_weekDay, prev_m_day, i) {
+                var index = prev_m_day - first_weekDay + i + 1;
+                return index
+            },
+            _generate_month_days_remain_lines: function(calendar_tbody, first_weekDay, rows, m_day, date) {
+                var _this = this;
+                var index = 7 - first_weekDay;
+                var isNextM = false;
+                for (var i = 0; i < rows - 1; i++) {
+                    var tr = $("<tr></tr>");
+                    for (var j = 0; j < 7; j++) {
+                        var td = $("<td style='width:36.8px;text-align:center;'></td>");
+                        if (index > m_day - 1) {
+                            index = 0;
+                            isNextM = true;
+                        }
+                        if (isNextM) {
+                            td.addClass("next-month")
+                        } else {
+                            _this._set_picked_date_highlight(td, index + 1, date);
+                        }
+                        index++
+                        td.append(_this._generate_td_inner_a(index));
+                        tr.append(td);
+                    }
+                    calendar_tbody.append(tr);
+                }
+            },
+            _generate_today_reset_btn: function() {
+                var btn = $("<input class='calendar-today-reset' type='button' value='Today'>");
+                btn.on("click", function(e) {
+                    var date = utils.getCurrentDate();
+                    var target = $(this).parents(".register-input-container-group");
+                    utils.changePickedDate(target, date);
+                });
+                return btn
+            },
+            _generate_close_calendar_btn: function() {
+                var _this = this;
+                var btn = $("<span class='fa fa-close close-calendar'></span>");
+                btn.on("click", function(e) {
+                    var calendar = $(this).parents(".calendar-container");
+                    _this._destory_calendar(calendar);
+                });
+                return btn
+            },
+            _set_picked_date_highlight: function(td, i, date) {
+                if (date.day === i) {
+                    td.addClass("pickd-day");
+                }
+            }
         });
-        new calendar();
+
+        function events() {
+            this._init();
+        }
+        $.extend(events.prototype, {
+            _init: function() {
+                this._iconEl_click();
+                this._document_click();
+            },
+            _iconEl_click: function() {
+                iconEl.click(function(e) {
+                    calendar.prototype._destory_calendar($(".calendar-container"));
+                    new calendar(pickdDate, containerEl);
+                });
+            },
+            _document_click: function() {
+                $(document).on("click", function(e) {
+                    //if user clicked element is not in calendar, then we fade out the calendar
+                    if (!!!$(e.target).parents(".register-input-container-group").length && !!$(".calendar-container")) {
+                        if (e.target.className !== "calendar-today-reset") {
+                            calendar.prototype._destory_calendar($(".calendar-container"));
+                        }
+                    }
+                });
+            },
+            _prev_month:function(){
+
+            },
+            _next_month:function(){
+                
+            }
+        });
+        new events();
+
     }
 
 });
